@@ -35,7 +35,7 @@ public class JFastReader extends Frame implements ActionListener, AdjustmentList
   final int WND_W=208, WND_H=276;  // initial window size
   final String APPNAME="jFastReader";
   final String APPVERSION="1.0";
-    
+  
   private static JFastReader jFastReader = null;
   
   Font ftPlain8 = new Font("Dialog", Font.PLAIN, 8);
@@ -45,6 +45,9 @@ public class JFastReader extends Frame implements ActionListener, AdjustmentList
   File curFile;
   int curWord = 1;
   int maxWord = 1;
+  int defWordLen = 5;
+  int sleepWPM = 120;
+  int sleepWPMDelta = 5;
   MySeeker seeker = new MySeeker();
   
   Panel pnMain = new Panel(new BorderLayout());
@@ -73,8 +76,8 @@ public class JFastReader extends Frame implements ActionListener, AdjustmentList
   Scrollbar sbProgress = new Scrollbar(Scrollbar.HORIZONTAL, 0, 0, 0, 0);
   
   Label lbSpeedTag = new Label("Speed (wpm.)", Label.LEFT);
-  MyProgBar cvSpeed = new MyProgBar();
-  Label lbSpeed = new Label("---", Label.LEFT);
+  MyProgBar cvSpeed = new MyProgBar(10,600,sleepWPM);
+  Label lbSpeed = new Label(String.valueOf(sleepWPM), Label.LEFT);
   
   Button btOptions = new Button("Opt.");
   Button btBookmark = new Button("Bkmk");
@@ -104,6 +107,7 @@ public class JFastReader extends Frame implements ActionListener, AdjustmentList
   Dimension dmScreen = Toolkit.getDefaultToolkit().getScreenSize();  // get Screen dimensions
 
   MyInfoPrint MIP = new MyInfoPrint(this);
+  PlayThread ptRead = new PlayThread();
 
   private class MainWindowAdapter extends WindowAdapter {
     public void windowClosing(WindowEvent we) {
@@ -187,6 +191,24 @@ public class JFastReader extends Frame implements ActionListener, AdjustmentList
       if (curWord < maxWord) {
         showWord(++curWord);
       }
+    } else if (ae.getSource().equals(btRead)) {
+      ptRead.stopNow();
+      ptRead = new PlayThread();
+      ptRead.start();
+    } else if (ae.getSource().equals(btPause)) {
+      ptRead.stopNow();
+    } else if (ae.getSource().equals(btSlower)) {
+      if (sleepWPM-sleepWPMDelta>=10) {
+        sleepWPM -= sleepWPMDelta;
+      }
+      lbSpeed.setText(String.valueOf(sleepWPM));
+      cvSpeed.setPos(sleepWPM);
+    } else if (ae.getSource().equals(btFaster)) {
+      if (sleepWPM+sleepWPMDelta<=600) {
+        sleepWPM += sleepWPMDelta;
+      }
+      lbSpeed.setText(String.valueOf(sleepWPM));
+      cvSpeed.setPos(sleepWPM);
     }
     // TODO: more events
   }
@@ -237,6 +259,8 @@ public class JFastReader extends Frame implements ActionListener, AdjustmentList
           MIP.busy("Indexing...");
           while ((tmp = f.readLine()) != null) {
             // System.out.println("Read line: >" + tmp + "<");
+            tmp = tmp.trim();
+            tmp = strReplace(tmp, "  ", " ");
             String[] words = splitString(tmp, " ");
             // System.out.println("Setting index for word #"+wordcount+" to pos. "+lastPos);
             seeker.add(wordcount, lastPos);
@@ -252,9 +276,10 @@ public class JFastReader extends Frame implements ActionListener, AdjustmentList
         }
         long[] seekpos = seeker.getSeekForWord(w);
         f.seek(seekpos[1]);
-        String myLine = f.readLine();
+        String myLine = f.readLine().trim();
+        myLine = strReplace(myLine, "  ", " ");
         int indexl = 0;
-        while (seekpos[0]<w && myLine.indexOf(" ", indexl)>0) {
+        while (seekpos[0]<w && myLine.indexOf(" ", indexl)>=0) {
           // System.out.println("Need word: "+w+"; cur: "+seekpos[0]);
           indexl = myLine.indexOf(" ", indexl+1)+1;
           seekpos[0]++;
@@ -272,8 +297,21 @@ public class JFastReader extends Frame implements ActionListener, AdjustmentList
     return result;
   }
   
+  private String strReplace(String input, String search, String replace) {
+    String output = input;
+    while (output.indexOf(search)>=0) {
+      int i = output.indexOf(search);
+      int j = i+search.length();
+      output = output.substring(0,i)+replace+output.substring(j);
+    }
+    return output;
+  }
+  
   private void showWord(int w) {
     String wrd = getWord(w);
+    int sleeplen = (int)((double)wrd.length()/(double)defWordLen*(double)60000/(double)sleepWPM);
+    System.out.println("Sleep for >"+wrd+"< is "+sleeplen);
+    ptRead.setSleep(sleeplen);
     tfGo.setText(String.valueOf(w));
     sbProgress.setValue(w);
     cvFR.setWord(wrd);
@@ -294,6 +332,10 @@ public class JFastReader extends Frame implements ActionListener, AdjustmentList
     btQuit.addActionListener(this);
     btBack.addActionListener(this);
     btForw.addActionListener(this);
+    btRead.addActionListener(this);
+    btPause.addActionListener(this);
+    btSlower.addActionListener(this);
+    btFaster.addActionListener(this);
     sbProgress.addAdjustmentListener(this);
     
     pnMain.setFont(ftPlain8);
@@ -422,6 +464,47 @@ public class JFastReader extends Frame implements ActionListener, AdjustmentList
       }
       return result;
     }
+  }
+  
+  private class PlayThread extends Thread {
+    private boolean stopnow;
+    private int sleeper = 1;
+   
+    public void run() {
+      this.stopnow = false;
+      try {
+        while (!this.stopnow && curWord<=maxWord) {
+          showWord(curWord++);
+          try {
+            Thread.sleep(sleeper);
+          } catch (InterruptedException exIE) {
+            System.out.println("PlayThread interrupted.");
+          }
+        }
+        curWord--;
+        MIP.infoPrint("Text end.");
+        return;
+      } catch (Exception ex) {
+        System.out.println("Exception in PlayThread: "+ex.toString());
+        ex.printStackTrace();
+      }
+    }
+    
+    public void setSleep(int s) {
+      this.sleeper = s;
+    }
+    
+    public void stopNow() {
+      while (isAlive()) {
+        this.stopnow = true;
+        try {
+          Thread.sleep(100);
+        } catch (InterruptedException exIE) {
+          System.out.println("stopNow interrupted.");
+        }
+      }
+    }
+
   }
 
 }
