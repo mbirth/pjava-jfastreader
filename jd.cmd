@@ -1,0 +1,1 @@
+@javadoc -private  -sourcepath ./ -classpath ./;C:/progra~1/java/jre1.4.2_04/lib -d ./docs -linkoffline http://java.sun.com/j2se/1.5.0/docs/api/ C:/progra~1/java/jdk1.5.0/docs/api -author  -use  -verbose  -version  JFastReader.java

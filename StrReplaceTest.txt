@@ -1,0 +1,3 @@
+  Two spaces at beginning of line.
+And here two spaces at end of line.  
+  A  B  C  D  E  F  G  H  I  J  K  L  M  

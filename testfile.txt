@@ -1,0 +1,4 @@
+This is only a test
+with jFastReader to
+see if it works perfectly
+andthisisanextralongwordforit
