@@ -482,7 +482,9 @@ public class JFastReader extends Frame implements ActionListener, AdjustmentList
           }
         }
         curWord--;
-        MIP.infoPrint("Text end.");
+        if (!this.stopnow) {
+          MIP.infoPrint("Text end.");
+        }
         return;
       } catch (Exception ex) {
         System.out.println("Exception in PlayThread: "+ex.toString());
