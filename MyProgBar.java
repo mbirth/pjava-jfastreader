@@ -51,6 +51,6 @@ class MyProgBar extends Canvas {
     
   public void setPos(int p) {
     curVal = p;
-    repaint();
+    paint(getGraphics());
   }
 }

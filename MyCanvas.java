@@ -35,6 +35,6 @@ class MyCanvas extends Canvas {
   
   public void setWord(String txt) {
     word = txt.trim();
-    repaint();
+    paint(getGraphics());
   }
 }
