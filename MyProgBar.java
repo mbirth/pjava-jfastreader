@@ -11,10 +11,23 @@ class MyProgBar extends Canvas {
   Color fgColor = new Color(0,0,128);
   Color bgColor = Color.lightGray;
   Color txColor = Color.white;
+  
+  public MyProgBar(int min, int max, int pos) {
+    super();
+    this.minVal = min;
+    this.maxVal = max;
+    this.curVal = pos;
+  }
+    
+  public MyProgBar(int min, int max) {
+    super();
+    this.minVal = min;
+    this.maxVal = max;
+  }
     
   public void paint(Graphics g) {
     double percentage = (double)(curVal-minVal)/(double)(maxVal-minVal);
-    String percString = Double.toString(percentage*100) + "%";
+    String percString = String.valueOf((int)(percentage*100)) + "%";
     g.setFont(new Font("Dialog", Font.PLAIN, 10));
     FontMetrics fm = getFontMetrics(g.getFont());
     g.setColor(bgColor);
