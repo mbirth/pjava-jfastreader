@@ -24,78 +24,86 @@ import java.awt.Scrollbar;
 import java.awt.SystemColor;
 import java.awt.TextField;
 import java.awt.Toolkit;
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 
 public class JFastReader extends Frame implements ActionListener {
 
-  final static int WND_W=208, WND_H=276;  // initial window size
-  final static String APPNAME="jFastReader";
-  final static String APPVERSION="1.0";
+  final int WND_W=208, WND_H=276;  // initial window size
+  final String APPNAME="jFastReader";
+  final String APPVERSION="1.0";
     
   private static JFastReader jFastReader = null;
   
-  static Font ftPlain8 = new Font("Dialog", Font.PLAIN, 8);
-  static Font ftPlain10 = new Font("Dialog", Font.PLAIN, 10);
-  static Font ftBold12 = new Font("Dialog", Font.BOLD, 12);
+  Font ftPlain8 = new Font("Dialog", Font.PLAIN, 8);
+  Font ftPlain10 = new Font("Dialog", Font.PLAIN, 10);
+  Font ftBold12 = new Font("Dialog", Font.BOLD, 12);
   
-  static String curFile = "";
+  File curFile;
+  int curWord = 1;
+  int maxWord = 1;
+  MySeeker seeker = new MySeeker();
   
-  static Panel pnMain = new Panel(new BorderLayout());
+  Panel pnMain = new Panel(new BorderLayout());
 
-  static Panel pnTop = new Panel(new FlowLayout(FlowLayout.CENTER,1,1));
-  static Panel pnBottom = new Panel(new BorderLayout());
-  static Panel pnBottom2 = new Panel(new GridLayout(3,2,2,2));
-  static Panel pnSpeed = new Panel(new BorderLayout());
-  static Panel pnOptBook = new Panel(new GridLayout(1,2,1,1));
-  static Panel pnSlowFast = new Panel(new GridLayout(1,2,1,1));
-  static Panel pnBackForw = new Panel(new GridLayout(1,2,1,1));
-  static Panel pnReadPaus = new Panel(new GridLayout(1,2,1,1));
-  static Panel pnReptButt = new Panel(new GridLayout(1,2,1,1));
-  static Panel pnButtons = new Panel(new GridLayout(2,1,1,1));
+  Panel pnTop = new Panel(new BorderLayout());
+  Panel pnTopLeft = new Panel(new FlowLayout(FlowLayout.LEFT,1,1));
+  Panel pnTopRight = new Panel(new FlowLayout(FlowLayout.RIGHT,1,1));
+  Panel pnBottom = new Panel(new BorderLayout());
+  Panel pnBottom2 = new Panel(new GridLayout(3,2,2,1));
+  Panel pnSpeed = new Panel(new BorderLayout());
+  Panel pnOptBook = new Panel(new GridLayout(1,2,1,1));
+  Panel pnSlowFast = new Panel(new GridLayout(1,2,1,1));
+  Panel pnBackForw = new Panel(new GridLayout(1,2,1,1));
+  Panel pnReadPaus = new Panel(new GridLayout(1,2,1,1));
+  Panel pnReptButt = new Panel(new GridLayout(1,2,1,1));
+  Panel pnButtons = new Panel(new GridLayout(2,1,1,1));
 
-  static Label lbGo = new Label("Word:", Label.RIGHT);
-  static TextField tfGo = new TextField("", 4);
-  static Button btGo = new Button("Go");
-  static Button btAbout = new Button("About");
-  static Button btText = new Button("Text");
+  Label lbGo = new Label("Word:", Label.RIGHT);
+  TextField tfGo = new TextField("", 4);
+  Button btGo = new Button("Go");
+  Button btAbout = new Button("?");
+  Button btText = new Button("Go Text");
   
-  static MyCanvas cvFR = new MyCanvas();
+  MyCanvas cvFR = new MyCanvas();
   
-  static Scrollbar sbProgress = new Scrollbar(Scrollbar.HORIZONTAL, 0, 0, 0, 0);
+  Scrollbar sbProgress = new Scrollbar(Scrollbar.HORIZONTAL, 0, 0, 0, 0);
   
-  static Label lbSpeedTag = new Label("Speed (wpm.)", Label.LEFT);
-  static MyProgBar cvSpeed = new MyProgBar();
-  static Label lbSpeed = new Label("---", Label.LEFT);
+  Label lbSpeedTag = new Label("Speed (wpm.)", Label.LEFT);
+  MyProgBar cvSpeed = new MyProgBar();
+  Label lbSpeed = new Label("---", Label.LEFT);
   
-  static Button btOptions = new Button("Options");
-  static Button btBookmark = new Button("Bookmark");
+  Button btOptions = new Button("Opt.");
+  Button btBookmark = new Button("Bkmk");
   
-  static Button btSlower = new Button("<<\nSlower");
-  static Button btFaster = new Button(">>\nFaster");
-  static Button btBack = new Button("<<\nBKWD");
-  static Button btForw = new Button(">>\nFWD");
+  Button btSlower = new Button("<<\nSlwr");
+  Button btFaster = new Button(">>\nFstr");
+  Button btBack = new Button("<\nBKW");
+  Button btForw = new Button(">\nFWD");
   
-  static Button btRead = new Button("READ");
-  static Button btPause = new Button("PAUSE");
-  static Button btRepeat = new Button("REPEAT");
+  Button btRead = new Button(">\nREAD");
+  Button btPause = new Button("||\nPAUS");
+  Button btRepeat = new Button("REPT");
   
-  static Button btLoad = new Button("Load File");
-  static Button btQuit = new Button("Exit");
+  Button btLoad = new Button("Load");
+  Button btQuit = new Button("Exit");
 
 
-  transient Dialog diAbout = new Dialog(this, "About...", true);
-  static Panel pnAboutText = new Panel(new GridLayout(0,1,0,0));
-  static Panel pnAboutButt = new Panel(new FlowLayout(FlowLayout.RIGHT));
-  static Label lbAbout1 = new Label(APPNAME, Label.CENTER);
-  static Label lbAbout2 = new Label("by Markus Birth", Label.CENTER);
-  static Label lbAbout3 = new Label("mbirth@webwriters.de", Label.CENTER);
-  static Label lbAbout4 = new Label("http://www.webwriters.de/mbirth/", Label.CENTER);
-  static Button btOk = new Button("OK");
+  Dialog diAbout = new Dialog(this, "About...", true);
+  Panel pnAboutText = new Panel(new GridLayout(0,1,0,0));
+  Panel pnAboutButt = new Panel(new FlowLayout(FlowLayout.RIGHT));
+  Label lbAbout1 = new Label(APPNAME, Label.CENTER);
+  Label lbAbout2 = new Label("by Markus Birth", Label.CENTER);
+  Label lbAbout3 = new Label("mbirth@webwriters.de", Label.CENTER);
+  Label lbAbout4 = new Label("http://www.webwriters.de/mbirth/", Label.CENTER);
+  Button btOk = new Button("OK");
 
-  static Dimension dmScreen = Toolkit.getDefaultToolkit().getScreenSize();  // get Screen dimensions
+  Dimension dmScreen = Toolkit.getDefaultToolkit().getScreenSize();  // get Screen dimensions
 
-  transient Dialog diInfo = new Dialog(this, "infoPrint", false);
-  static Label lbInfo = new Label();
-  transient InfoPrintThread thIPT = new InfoPrintThread();
+  Dialog diInfo = new Dialog(this, "infoPrint", false);
+  Label lbInfo = new Label();
+  InfoPrintThread thIPT = new InfoPrintThread();
 
   private class MainWindowAdapter extends WindowAdapter {
     public void windowClosing(WindowEvent we) {
@@ -143,14 +151,109 @@ public class JFastReader extends Frame implements ActionListener {
       System.out.println("Exit button clicked. Sending event...");
       dispatchEvent(new WindowEvent(this, 201));
     } else if (ae.getSource().equals(btLoad)) {           // Load-Button
-      System.out.println("Show load-dialog...");
       FileDialog fdLoad = new FileDialog(jFastReader, "Load file", FileDialog.LOAD);
       fdLoad.show();
-      System.out.println("Directory: "+fdLoad.getDirectory());
-      System.out.println("File: "+fdLoad.getFile());
-      curFile = fdLoad.getDirectory() + fdLoad.getFile();
+      if (fdLoad.getFile() != null) {
+        System.out.println("Directory: "+fdLoad.getDirectory());
+        System.out.println("File: "+fdLoad.getFile());
+        curFile = new File(fdLoad.getDirectory() + fdLoad.getFile());
+        seeker = new MySeeker();
+        curWord = 1;
+        maxWord = 1;
+        getWord(1);
+        showWord(curWord);
+      } else {
+        infoPrint("Cancelled.");
+      }
+    } else if (ae.getSource().equals(btBack)) {
+      System.out.println("<<< BACK");
+      if (curWord > 1) {
+        showWord(--curWord);
+      }
+    } else if (ae.getSource().equals(btForw)) {
+      System.out.println(">>> FORW");
+      if (curWord < maxWord) {
+        showWord(++curWord);
+      }
     }
     // TODO: more events
+  }
+  
+  private String[] splitString(String str, String delim) {
+    str = str.trim();
+    int i = 1;
+    int lastIndex = 0;
+    int idx;
+    // System.out.println("sS: Input string is >"+str+"<, delimiter >"+delim+"<");
+    // System.out.println("sS: Counting words...");
+    while ((idx=str.indexOf(delim, lastIndex)) >= 0) {
+      i++;
+      lastIndex = idx+1;
+    }
+    // System.out.println("sS: Counted "+i+" words.");
+    String[] result = new String[i];
+    lastIndex = 0;
+    i = 0;
+    while ((idx=str.indexOf(delim, lastIndex)) >= 0) {
+      result[i] = str.substring(lastIndex, idx);
+      // System.out.println("sS: Word #"+i+" >"+result[i]+"<");
+      lastIndex = idx+1;
+      i++;
+    }
+    result[i] = str.substring(lastIndex);
+    // System.out.println("sS: Word #"+i+" >"+result[i]+"<");
+    return result;
+  }
+  
+  public String getWord(int w) {
+    String result = "";
+    if (curFile != null && curFile.exists() && curFile.isFile()) {
+      try {
+        RandomAccessFile f = new RandomAccessFile(curFile, "r");
+        String tmp;
+        long lastPos = 0;
+        int wordcount = 1;
+        if (seeker.len <= 0) {
+          // get wordcounts
+          infoPrint("Indexing...");
+          while ((tmp = f.readLine()) != null) {
+            // System.out.println("Read line: >" + tmp + "<");
+            String[] words = splitString(tmp, " ");
+            // System.out.println("Setting index for word #"+wordcount+" to pos. "+lastPos);
+            seeker.add(wordcount, lastPos);
+            wordcount += words.length;
+            // System.out.println("New wordcount is now "+wordcount);
+            lastPos = f.getFilePointer();
+          }
+          maxWord = --wordcount;
+          System.out.println("Words at all: "+maxWord);
+        }
+        long[] seekpos = seeker.getSeekForWord(w);
+        f.seek(seekpos[1]);
+        String myLine = f.readLine();
+        int indexl = 0;
+        while (seekpos[0]<w && myLine.indexOf(" ", indexl)>0) {
+          System.out.println("Need word: "+w+"; cur: "+seekpos[0]);
+          indexl = myLine.indexOf(" ", indexl+1)+1;
+          seekpos[0]++;
+        }
+        System.out.println("Need word: "+w+"; got: "+seekpos[0]);
+        int indexr = myLine.indexOf(" ", indexl+1);
+        if (indexr <= 0) { indexr = myLine.length(); }
+        result = myLine.substring(indexl, indexr);
+        f.close();
+      } catch (IOException ioe) {
+        System.out.println("IOException while reading file: "+ioe.toString());
+        infoPrint("File IO error");
+      }
+    }
+    return result;
+  }
+  
+  private void showWord(int w) {
+    String wrd = getWord(w);
+    System.out.println("Should show word #"+w+" >"+wrd+"<");
+    cvFR.setWord(wrd);
   }
 
   public JFastReader() {                // Constructor
@@ -165,17 +268,18 @@ public class JFastReader extends Frame implements ActionListener {
     btAbout.addActionListener(this);
     btLoad.addActionListener(this);
     btQuit.addActionListener(this);
+    btBack.addActionListener(this);
+    btForw.addActionListener(this);
     
     pnMain.setFont(ftPlain8);
-    btGo.setFont(ftPlain8);
-    btAbout.setFont(ftPlain8);
-    btText.setFont(ftPlain8);
     
-    pnTop.add(lbGo);
-    pnTop.add(tfGo);
-    pnTop.add(btGo);
-    pnTop.add(btAbout);
-    pnTop.add(btText);
+    pnTopLeft.add(lbGo);
+    pnTopLeft.add(tfGo);
+    pnTopLeft.add(btGo);
+    pnTopRight.add(btAbout);
+    pnTopRight.add(btText);
+    pnTop.add(pnTopLeft, BorderLayout.WEST);
+    pnTop.add(pnTopRight, BorderLayout.EAST);
     
     pnSpeed.add(lbSpeedTag, BorderLayout.NORTH);
     pnSpeed.add(cvSpeed, BorderLayout.CENTER);
@@ -254,75 +358,46 @@ public class JFastReader extends Frame implements ActionListener {
     diAbout.setLocation(ptWindow.x+(dmWindow.width-dmAboutBox.width)/2, ptWindow.y+dmWindow.height-dmAboutBox.height);
   }
   
-  private static class MyCanvas extends Canvas {
-    static Color bgColor = new Color(0,0,128);
-    static Color fgColor = new Color(255,255,0);
-    static String word = "";
-    static int maxFontSize = 100;
+  private class MySeeker {
+    int[] poses = new int[0];
+    long[] seeker = new long[0];
+    int len = 0;
     
-    public void paint(Graphics g) {
-      g.setColor(bgColor);
-      g.fillRect(0,0,getSize().width-1,getSize().height-2);
-      g.setColor(Color.black);
-      g.drawRect(0,0,getSize().width-1,getSize().height-2);
-      if (word.length()>0) {
-        g.setColor(fgColor);
-        // do auto-downsizing of font
-        int fs = maxFontSize;
-        Font f;
-        FontMetrics fm;
-        do {
-          f = new Font("Dialog", Font.BOLD, fs);
-          fm = g.getFontMetrics(f);
-          fs -= 2;
-        } while ((fm.stringWidth(word)>getSize().width-2) || (fm.getHeight()>getSize().height-2));
-        g.setFont(f);
-        g.drawString(word, getSize().width/2-fm.stringWidth(word)/2, getSize().height/2-fm.getHeight()/2+fm.getAscent());
+    public void add(int word, long pos) {
+      int[] newp = new int[len+1];
+      long[] news = new long[len+1];
+      for (int i=0;i<len;i++) {
+        newp[i] = poses[i];
+        news[i] = seeker[i];
       }
+      newp[len] = word;
+      news[len] = pos;
+      poses = newp;
+      seeker = news;
+      len++;
     }
     
-    public void setWord(String txt) {
-      word = txt;
-      repaint();
-    }
-  }
-  
-  private static class MyProgBar extends Canvas {
-    static int minVal = 0;
-    static int maxVal = 100;
-    static int curVal = 50;
-    static Color fgColor = new Color(0,0,128);
-    static Color bgColor = Color.lightGray;
-    static Color txColor = Color.white;
-    
-    public void paint(Graphics g) {
-      double percentage = (double)(curVal-minVal)/(double)(maxVal-minVal);
-      String percString = Double.toString(percentage*100) + "%";
-      g.setFont(ftPlain10);
-      FontMetrics fm = getFontMetrics(g.getFont());
-      g.setColor(bgColor);
-      g.fillRect(0,0,getSize().width-1,getSize().height-1);
-      g.setColor(fgColor);
-      g.fillRect(0,0,(int)((double)(getSize().width-1)/(maxVal-minVal)*(curVal-minVal)),getSize().height-1);
-      g.setXORMode(txColor);
-      g.drawString(percString, getSize().width/2-fm.stringWidth(percString)/2, getSize().height/2-fm.getHeight()/2+fm.getAscent());
-      g.setPaintMode();
-      g.setColor(Color.black);
-      g.drawRect(0,0,getSize().width-1,getSize().height-1);
+    public long[] getSeekForWord(int word) {
+      // System.out.println("gSFW: Seek word #"+word);
+      long[] result = new long[2];
+      if (len>0) {
+        int i=0;
+        while (i<len && poses[i]<=word) {
+          // System.out.println("gSFW: "+i+" Curwordindex: "+poses[i]+" / Seek: "+seeker[i]);
+          i++;
+        }
+        if (i>0) { i--; }
+        // System.out.println("gSFW: Nearest word is #"+poses[i]+" at pos. "+seeker[i]);
+        result[0] = poses[i];
+        result[1] = seeker[i];
+      } else {
+        System.out.println("gSFW: No data.");
+        result[0] = 0;
+        result[1] = 0;
+      }
+      return result;
     }
     
-    public void setMinValue(int v) {
-      minVal = v;
-    }
-    
-    public void setMaxValue(int v) {
-      maxVal = v;
-    }
-    
-    public void setPos(int p) {
-      curVal = p;
-      repaint();
-    }
   }
   
   // waits 3 seconds and then hides the diInfo-Dialog
