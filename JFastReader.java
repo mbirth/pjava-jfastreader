@@ -10,6 +10,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.FileDialog;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -31,6 +32,12 @@ public class JFastReader extends Frame implements ActionListener {
   final static String APPVERSION="1.0";
     
   private static JFastReader jFastReader = null;
+  
+  static Font ftPlain8 = new Font("Dialog", Font.PLAIN, 8);
+  static Font ftPlain10 = new Font("Dialog", Font.PLAIN, 10);
+  static Font ftBold12 = new Font("Dialog", Font.BOLD, 12);
+  
+  static String curFile = "";
   
   static Panel pnMain = new Panel(new BorderLayout());
 
@@ -94,6 +101,18 @@ public class JFastReader extends Frame implements ActionListener {
     public void windowClosing(WindowEvent we) {
       // TODO: Insert commands to execute upon shutdown
       System.out.println("Received windowClosing event... application shutting down.");
+      infoPrint("Goodbye...");
+      System.out.println("Initiated InfoPrint...");
+      try {
+        while (thIPT.isAlive()) {
+          thIPT.setStopnow(true);
+          Thread.sleep(100);
+        }
+      } catch (InterruptedException exIE) {
+        System.out.println("Sleeping won't work. "+exIE.toString());
+        exIE.printStackTrace();
+      }
+      System.out.println("InfoPrint stopped.");
       System.exit(0);
     }
   }
@@ -121,20 +140,15 @@ public class JFastReader extends Frame implements ActionListener {
       diAbout.setVisible(true);
       btOk.requestFocus();
     } else if (ae.getSource().equals(btQuit)) {          // Quit-Button
-      System.out.println("Exit menuitem selected.");
-      infoPrint("Goodbye...");
-      System.out.println("Initiated InfoPrint...");
-      try {
-        while (thIPT.isAlive()) {
-          thIPT.setStopnow(true);
-          Thread.sleep(100);
-        }
-      } catch (InterruptedException exIE) {
-        System.out.println("Sleeping won't work. "+exIE.toString());
-        exIE.printStackTrace();
-      }
-      System.out.println("InfoPrint stopped. Sending event...");
+      System.out.println("Exit button clicked. Sending event...");
       dispatchEvent(new WindowEvent(this, 201));
+    } else if (ae.getSource().equals(btLoad)) {           // Load-Button
+      System.out.println("Show load-dialog...");
+      FileDialog fdLoad = new FileDialog(jFastReader, "Load file", FileDialog.LOAD);
+      fdLoad.show();
+      System.out.println("Directory: "+fdLoad.getDirectory());
+      System.out.println("File: "+fdLoad.getFile());
+      curFile = fdLoad.getDirectory() + fdLoad.getFile();
     }
     // TODO: more events
   }
@@ -142,16 +156,20 @@ public class JFastReader extends Frame implements ActionListener {
   public JFastReader() {                // Constructor
     addWindowListener(new MainWindowAdapter());
     setTitle(APPNAME+" "+APPVERSION+" by Markus Birth");  // set Frame title
-    //setResizable(false);
+    setResizable(false);
     setSize(WND_W, WND_H);   // set Frame size
     setLocation((dmScreen.width-WND_W)/2, (dmScreen.height-WND_H)/2); // center Frame
     infoPrint(APPNAME+" loading...");
     doAbout();
     
     btAbout.addActionListener(this);
+    btLoad.addActionListener(this);
     btQuit.addActionListener(this);
-
-    pnMain.setFont(new Font("Dialog", Font.PLAIN, 8));
+    
+    pnMain.setFont(ftPlain8);
+    btGo.setFont(ftPlain8);
+    btAbout.setFont(ftPlain8);
+    btText.setFont(ftPlain8);
     
     pnTop.add(lbGo);
     pnTop.add(tfGo);
@@ -188,8 +206,6 @@ public class JFastReader extends Frame implements ActionListener {
     pnBottom2.add(pnReadPaus);
     pnBottom2.add(pnReptButt);
     
-    //pnBottom.add(cvFR);
-    //pnBottom.add(cvFR, BorderLayout.NORTH);
     pnBottom.add(sbProgress, BorderLayout.CENTER);
     pnBottom.add(pnBottom2, BorderLayout.SOUTH);
     
@@ -217,13 +233,11 @@ public class JFastReader extends Frame implements ActionListener {
   }
   
   public final void doAbout() {
-    Font ftPlain = new Font("Dialog", Font.PLAIN, 10);
-    Font ftBold = new Font("Dialog", Font.BOLD, 12);
     pnAboutButt.add(btOk);
-    lbAbout1.setFont(ftBold);
-    lbAbout2.setFont(ftPlain);
-    lbAbout3.setFont(ftPlain);
-    lbAbout4.setFont(ftPlain);
+    lbAbout1.setFont(ftBold12);
+    lbAbout2.setFont(ftPlain10);
+    lbAbout3.setFont(ftPlain10);
+    lbAbout4.setFont(ftPlain10);
     diAbout.setLayout(new BorderLayout());
     diAbout.setBackground(SystemColor.control);
     pnAboutText.add(lbAbout1);
@@ -284,7 +298,7 @@ public class JFastReader extends Frame implements ActionListener {
     public void paint(Graphics g) {
       double percentage = (double)(curVal-minVal)/(double)(maxVal-minVal);
       String percString = Double.toString(percentage*100) + "%";
-      g.setFont(new Font("Dialog", Font.PLAIN, 10));
+      g.setFont(ftPlain10);
       FontMetrics fm = getFontMetrics(g.getFont());
       g.setColor(bgColor);
       g.fillRect(0,0,getSize().width-1,getSize().height-1);
