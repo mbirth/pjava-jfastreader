@@ -192,37 +192,10 @@ public class JFastReader extends Frame implements ActionListener, AdjustmentList
   }
   
   // handler for AdjustmentListener
+  // used for Scrollbar sbProgress
   public void adjustmentValueChanged(AdjustmentEvent ae) {
-    System.out.println("Scrollbar touched!");
     curWord = sbProgress.getValue();
     showWord(curWord);
-/*    if (ae.getValue() == AdjustmentEvent.TRACK || ae.getValue() == AdjustmentEvent.ADJUSTMENT_VALUE_CHANGED) {
-      System.out.println("Scrollbar moved. New value: "+sbProgress.getValue());
-      curWord = sbProgress.getValue();
-      showWord(curWord);
-    } else if (ae.getValue() == AdjustmentEvent.UNIT_INCREMENT) {
-      System.out.println("Scrollbar incremented.");
-      if (curWord < maxWord) {
-        showWord(++curWord);
-      }
-    } else if (ae.getValue() == AdjustmentEvent.UNIT_DECREMENT) {
-      System.out.println("Scrollbar decremented.");
-      if (curWord > 1) {
-        showWord(--curWord);
-      }
-    } else if (ae.getValue() == AdjustmentEvent.BLOCK_INCREMENT) {
-      System.out.println("Scrollbar block incremented.");
-      if (curWord+10 <= maxWord) {
-        curWord += 10;
-        showWord(curWord);
-      }
-    } else if (ae.getValue() == AdjustmentEvent.BLOCK_DECREMENT) {
-      System.out.println("Scrollbar block decremented.");
-      if (curWord-10 >= 1) {
-        curWord -= 10;
-        showWord(curWord);
-      }
-    } */
   }
   
   private String[] splitString(String str, String delim) {
@@ -261,7 +234,7 @@ public class JFastReader extends Frame implements ActionListener, AdjustmentList
         int wordcount = 1;
         if (seeker.len <= 0) {
           // get wordcounts
-          MIP.infoPrint("Indexing...");
+          MIP.busy("Indexing...");
           while ((tmp = f.readLine()) != null) {
             // System.out.println("Read line: >" + tmp + "<");
             String[] words = splitString(tmp, " ");
@@ -274,6 +247,7 @@ public class JFastReader extends Frame implements ActionListener, AdjustmentList
           maxWord = --wordcount;
           sbProgress.setMaximum(maxWord+1);
           MIP.hide();
+          MIP.infoPrint(String.valueOf(maxWord)+" words");
           // System.out.println("Words at all: "+maxWord);
         }
         long[] seekpos = seeker.getSeekForWord(w);
@@ -311,7 +285,7 @@ public class JFastReader extends Frame implements ActionListener, AdjustmentList
     //setResizable(false);
     setSize(WND_W, WND_H);   // set Frame size
     setLocation((dmScreen.width-WND_W)/2, (dmScreen.height-WND_H)/2); // center Frame
-    MIP.infoPrint(APPNAME+" loading...");
+    MIP.busy(APPNAME+" loading...");
     doAbout();
     
     btGo.addActionListener(this);
