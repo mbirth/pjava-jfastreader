@@ -8,6 +8,8 @@ import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.AdjustmentEvent;
+import java.awt.event.AdjustmentListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.FileDialog;
@@ -28,7 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
-public class JFastReader extends Frame implements ActionListener {
+public class JFastReader extends Frame implements ActionListener, AdjustmentListener {
 
   final int WND_W=208, WND_H=276;  // initial window size
   final String APPNAME="jFastReader";
@@ -116,6 +118,12 @@ public class JFastReader extends Frame implements ActionListener {
     public void windowActivated(WindowEvent we) {
     }
     
+    public void windowDeactivated(WindowEvent we) {
+      if (we.getSource().equals(diAbout)) {
+        diAbout.setVisible(false);
+      }
+    }
+    
     public void windowClosing(WindowEvent we) {
       if (we.getSource().equals(diAbout)) {
         // System.out.println("About manually closed.");
@@ -145,12 +153,29 @@ public class JFastReader extends Frame implements ActionListener {
         System.out.println("File: "+fdLoad.getFile());
         curFile = new File(fdLoad.getDirectory() + fdLoad.getFile());
         seeker = new MySeeker();
+        sbProgress.setMinimum(1);
+        sbProgress.setValue(1);
+        sbProgress.setVisibleAmount(1);
+        sbProgress.setUnitIncrement(1);
+        sbProgress.setBlockIncrement(10);
         curWord = 1;
         maxWord = 1;
         getWord(1);
         showWord(curWord);
       } else {
         MIP.infoPrint("Cancelled.");
+      }
+    } else if (ae.getSource().equals(btGo)) {
+      try {
+        int nw = Integer.parseInt(tfGo.getText());
+        if (nw >= 1 && nw <= maxWord) {
+          curWord = nw;
+          showWord(curWord);
+        } else {
+          MIP.infoPrint("Out of range");
+        }
+      } catch (NumberFormatException nfe) {
+        MIP.infoPrint("Not a number");
       }
     } else if (ae.getSource().equals(btBack)) {
       System.out.println("<<< BACK");
@@ -164,6 +189,40 @@ public class JFastReader extends Frame implements ActionListener {
       }
     }
     // TODO: more events
+  }
+  
+  // handler for AdjustmentListener
+  public void adjustmentValueChanged(AdjustmentEvent ae) {
+    System.out.println("Scrollbar touched!");
+    curWord = sbProgress.getValue();
+    showWord(curWord);
+/*    if (ae.getValue() == AdjustmentEvent.TRACK || ae.getValue() == AdjustmentEvent.ADJUSTMENT_VALUE_CHANGED) {
+      System.out.println("Scrollbar moved. New value: "+sbProgress.getValue());
+      curWord = sbProgress.getValue();
+      showWord(curWord);
+    } else if (ae.getValue() == AdjustmentEvent.UNIT_INCREMENT) {
+      System.out.println("Scrollbar incremented.");
+      if (curWord < maxWord) {
+        showWord(++curWord);
+      }
+    } else if (ae.getValue() == AdjustmentEvent.UNIT_DECREMENT) {
+      System.out.println("Scrollbar decremented.");
+      if (curWord > 1) {
+        showWord(--curWord);
+      }
+    } else if (ae.getValue() == AdjustmentEvent.BLOCK_INCREMENT) {
+      System.out.println("Scrollbar block incremented.");
+      if (curWord+10 <= maxWord) {
+        curWord += 10;
+        showWord(curWord);
+      }
+    } else if (ae.getValue() == AdjustmentEvent.BLOCK_DECREMENT) {
+      System.out.println("Scrollbar block decremented.");
+      if (curWord-10 >= 1) {
+        curWord -= 10;
+        showWord(curWord);
+      }
+    } */
   }
   
   private String[] splitString(String str, String delim) {
@@ -213,6 +272,8 @@ public class JFastReader extends Frame implements ActionListener {
             lastPos = f.getFilePointer();
           }
           maxWord = --wordcount;
+          sbProgress.setMaximum(maxWord+1);
+          MIP.hide();
           // System.out.println("Words at all: "+maxWord);
         }
         long[] seekpos = seeker.getSeekForWord(w);
@@ -239,6 +300,8 @@ public class JFastReader extends Frame implements ActionListener {
   
   private void showWord(int w) {
     String wrd = getWord(w);
+    tfGo.setText(String.valueOf(w));
+    sbProgress.setValue(w);
     cvFR.setWord(wrd);
   }
 
@@ -251,11 +314,13 @@ public class JFastReader extends Frame implements ActionListener {
     MIP.infoPrint(APPNAME+" loading...");
     doAbout();
     
+    btGo.addActionListener(this);
     btAbout.addActionListener(this);
     btLoad.addActionListener(this);
     btQuit.addActionListener(this);
     btBack.addActionListener(this);
     btForw.addActionListener(this);
+    sbProgress.addAdjustmentListener(this);
     
     pnMain.setFont(ftPlain8);
     
