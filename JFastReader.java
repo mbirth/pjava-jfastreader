@@ -101,26 +101,13 @@ public class JFastReader extends Frame implements ActionListener {
 
   Dimension dmScreen = Toolkit.getDefaultToolkit().getScreenSize();  // get Screen dimensions
 
-  Dialog diInfo = new Dialog(this, "infoPrint", false);
-  Label lbInfo = new Label();
-  InfoPrintThread thIPT = new InfoPrintThread();
+  MyInfoPrint MIP = new MyInfoPrint(this);
 
   private class MainWindowAdapter extends WindowAdapter {
     public void windowClosing(WindowEvent we) {
       // TODO: Insert commands to execute upon shutdown
-      System.out.println("Received windowClosing event... application shutting down.");
-      infoPrint("Goodbye...");
-      System.out.println("Initiated InfoPrint...");
-      try {
-        while (thIPT.isAlive()) {
-          thIPT.setStopnow(true);
-          Thread.sleep(100);
-        }
-      } catch (InterruptedException exIE) {
-        System.out.println("Sleeping won't work. "+exIE.toString());
-        exIE.printStackTrace();
-      }
-      System.out.println("InfoPrint stopped.");
+      MIP.infoPrint("Goodbye...");
+      MIP.hide();
       System.exit(0);
     }
   }
@@ -163,7 +150,7 @@ public class JFastReader extends Frame implements ActionListener {
         getWord(1);
         showWord(curWord);
       } else {
-        infoPrint("Cancelled.");
+        MIP.infoPrint("Cancelled.");
       }
     } else if (ae.getSource().equals(btBack)) {
       System.out.println("<<< BACK");
@@ -215,7 +202,7 @@ public class JFastReader extends Frame implements ActionListener {
         int wordcount = 1;
         if (seeker.len <= 0) {
           // get wordcounts
-          infoPrint("Indexing...");
+          MIP.infoPrint("Indexing...");
           while ((tmp = f.readLine()) != null) {
             // System.out.println("Read line: >" + tmp + "<");
             String[] words = splitString(tmp, " ");
@@ -226,25 +213,25 @@ public class JFastReader extends Frame implements ActionListener {
             lastPos = f.getFilePointer();
           }
           maxWord = --wordcount;
-          System.out.println("Words at all: "+maxWord);
+          // System.out.println("Words at all: "+maxWord);
         }
         long[] seekpos = seeker.getSeekForWord(w);
         f.seek(seekpos[1]);
         String myLine = f.readLine();
         int indexl = 0;
         while (seekpos[0]<w && myLine.indexOf(" ", indexl)>0) {
-          System.out.println("Need word: "+w+"; cur: "+seekpos[0]);
+          // System.out.println("Need word: "+w+"; cur: "+seekpos[0]);
           indexl = myLine.indexOf(" ", indexl+1)+1;
           seekpos[0]++;
         }
-        System.out.println("Need word: "+w+"; got: "+seekpos[0]);
+        // System.out.println("Need word: "+w+"; got: "+seekpos[0]);
         int indexr = myLine.indexOf(" ", indexl+1);
         if (indexr <= 0) { indexr = myLine.length(); }
         result = myLine.substring(indexl, indexr);
         f.close();
       } catch (IOException ioe) {
         System.out.println("IOException while reading file: "+ioe.toString());
-        infoPrint("File IO error");
+        MIP.infoPrint("File IO error");
       }
     }
     return result;
@@ -252,17 +239,16 @@ public class JFastReader extends Frame implements ActionListener {
   
   private void showWord(int w) {
     String wrd = getWord(w);
-    System.out.println("Should show word #"+w+" >"+wrd+"<");
     cvFR.setWord(wrd);
   }
 
   public JFastReader() {                // Constructor
     addWindowListener(new MainWindowAdapter());
     setTitle(APPNAME+" "+APPVERSION+" by Markus Birth");  // set Frame title
-    setResizable(false);
+    //setResizable(false);
     setSize(WND_W, WND_H);   // set Frame size
     setLocation((dmScreen.width-WND_W)/2, (dmScreen.height-WND_H)/2); // center Frame
-    infoPrint(APPNAME+" loading...");
+    MIP.infoPrint(APPNAME+" loading...");
     doAbout();
     
     btAbout.addActionListener(this);
@@ -323,7 +309,7 @@ public class JFastReader extends Frame implements ActionListener {
     
     // TODO: more initialization commands
     show(); // automagically calls paint(Graphics g)
-    diInfo.setVisible(false); // init done, hide infoPrint
+    MIP.hide(); // init done, hide infoPrint
   }
   
   public static void main(String args[]) {
@@ -397,71 +383,6 @@ public class JFastReader extends Frame implements ActionListener {
       }
       return result;
     }
-    
-  }
-  
-  // waits 3 seconds and then hides the diInfo-Dialog
-  private class InfoPrintThread extends Thread {
-    private transient boolean stopnow;
-    
-    public void run() {
-      this.stopnow = false;
-      try {
-        // System.out.println("IPT: started.");
-        long dtStart = System.currentTimeMillis();
-        while (System.currentTimeMillis()<dtStart+3000 && !this.stopnow) {
-          try {
-            Thread.sleep(100);
-          } catch (InterruptedException exIE) {
-            System.out.println("Caught "+exIE.toString());
-            exIE.printStackTrace();
-          }
-        }
-        diInfo.setVisible(false);
-        // System.out.println("IPT: completed.");
-        return;
-      } catch (Exception ex) {
-        System.out.println("Exception in IPT: "+ex.toString());
-        ex.printStackTrace();
-      }
-    }
-    
-    public void setStopnow(boolean x) {
-      this.stopnow = x;
-    }
   }
 
-  public final void infoPrint(String txt) {
-    if (System.getProperty("os.name").equals("EPOC")) {
-      TaskSwitch.infoPrint(txt);
-    } else {
-      while (thIPT.isAlive()) {
-        thIPT.setStopnow(true);
-        try {
-          Thread.sleep(100);
-        } catch (InterruptedException exIE) {
-          System.out.println("Caught "+exIE.toString());
-          exIE.printStackTrace();
-        }
-      }
-      diInfo.add(lbInfo);
-      lbInfo.setText(txt);
-      diInfo.pack();
-      Dimension dmWindow = this.getSize();
-      Point ptWindow = this.getLocation();
-      Dimension dmInfo = diInfo.getSize();
-      // System.out.println("Window is at "+ptWindow.x+"|"+ptWindow.y+" and "+dmWindow.width+"x"+dmWindow.height);
-      // System.out.println("InfoPrint is "+dmInfo.width+"x"+dmInfo.height);
-      Point ptInfo = new Point();
-      ptInfo.x = ptWindow.x+dmWindow.width-dmInfo.width;
-      ptInfo.y = ptWindow.y;
-      // System.out.println("InfoPrint will be positioned at "+ptInfo.x+"|"+ptInfo.y);
-      diInfo.setLocation(ptInfo);
-      diInfo.repaint();
-      diInfo.show();
-      // System.out.println("infoPrint: "+txt);
-      thIPT = new InfoPrintThread();
-      thIPT.start();
-    }
-  }
 }
