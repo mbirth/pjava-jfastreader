@@ -76,7 +76,7 @@ public class JFastReader extends Frame implements ActionListener, AdjustmentList
   Scrollbar sbProgress = new Scrollbar(Scrollbar.HORIZONTAL, 0, 0, 0, 0);
   
   Label lbSpeedTag = new Label("Speed (wpm.)", Label.LEFT);
-  MyProgBar cvSpeed = new MyProgBar(10,600,sleepWPM);
+  MyProgBar cvSpeed = new MyProgBar(10,600,(long)sleepWPM, MyProgBar.PQ2);
   Label lbSpeed = new Label(String.valueOf(sleepWPM), Label.LEFT);
   
   Button btOptions = new Button("Opt.");
@@ -202,13 +202,13 @@ public class JFastReader extends Frame implements ActionListener, AdjustmentList
         sleepWPM -= sleepWPMDelta;
       }
       lbSpeed.setText(String.valueOf(sleepWPM));
-      cvSpeed.setPos(sleepWPM);
+      cvSpeed.setPos((long)sleepWPM);
     } else if (ae.getSource().equals(btFaster)) {
       if (sleepWPM+sleepWPMDelta<=600) {
         sleepWPM += sleepWPMDelta;
       }
       lbSpeed.setText(String.valueOf(sleepWPM));
-      cvSpeed.setPos(sleepWPM);
+      cvSpeed.setPos((long)sleepWPM);
     }
     // TODO: more events
   }
@@ -310,7 +310,7 @@ public class JFastReader extends Frame implements ActionListener, AdjustmentList
   private void showWord(int w) {
     String wrd = getWord(w);
     int sleeplen = (int)((double)wrd.length()/(double)defWordLen*(double)60000/(double)sleepWPM);
-    System.out.println("Sleep for >"+wrd+"< is "+sleeplen);
+    // System.out.println("Sleep for >"+wrd+"< is "+sleeplen);
     ptRead.setSleep(sleeplen);
     tfGo.setText(String.valueOf(w));
     sbProgress.setValue(w);
